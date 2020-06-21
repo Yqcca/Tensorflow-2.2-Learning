@@ -1,0 +1,55 @@
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+# Warning Elimination
+
+import numpy as np
+from matplotlib import pyplot as plt
+import tensorflow as tf
+
+X_raw = np.array([2016, 2017, 2018, 2019, 2020], dtype=np.float32)
+y_raw = np.array([20000, 23000, 27000, 32500, 47500], dtype=np.float32)
+# Input the data
+
+X = (X_raw - X_raw.min()) / (X_raw.max() - X_raw.min())
+y = (y_raw - y_raw.min()) / (y_raw.max() - y_raw.min())
+
+X = tf.constant(X)
+y = tf.constant(y)
+
+a = tf.Variable(initial_value=0.)
+b = tf.Variable(initial_value=0.)
+variables = [a, b]
+
+num_epoch = 10000
+optimizer = tf.keras.optimizers.SGD(learning_rate=5e-4)
+# Define Optimizer and Learning rate
+
+summary_writer = tf.summary.create_file_writer('./tensorboard')
+
+for e in range(num_epoch):
+    # Use tf.GradientTape() to record the gradient 
+    with tf.GradientTape() as tape:
+        y_pred = a * X + b
+        loss = tf.reduce_sum(tf.square(y_pred - y))
+    # Calculate for the loss function
+
+    for batch_index in range(num_epoch):
+        # ...Data Traning
+        with summary_writer.as_default():  # Recorder for Tensorboard
+            tf.summary.scalar("loss", loss, step=batch_index)
+
+    grads = tape.gradient(loss, variables)
+    # Gradient Updating
+    optimizer.apply_gradients(grads_and_vars=zip(grads, variables))
+
+print(a, b)
+
+
+u = np.arange(0,1.1,0.1)
+v = a * u + b
+plt.title("Linear Regression for the housing price")
+plt.xlabel("x axis")
+plt.ylabel("y axis")
+plt.plot(u, v)
+plt.plot(X, y, '*')
+plt.show()   # Plot the result
