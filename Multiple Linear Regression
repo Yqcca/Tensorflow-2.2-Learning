@@ -1,0 +1,50 @@
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+# Warning Elimination
+
+import numpy as np
+import tensorflow as tf
+
+X1_raw = np.array([2016, 2017, 2018, 2019, 2020], dtype=np.float32)
+X2_raw = np.array([30, 25, 27, 40, 46], dtype=np.float32)
+y_raw = np.array([20000, 23000, 27000, 32500, 47500], dtype=np.float32)
+# Input the data
+
+X1 = (X1_raw - X1_raw.min()) / (X1_raw.max() - X1_raw.min())
+X2 = (X2_raw - X2_raw.min()) / (X2_raw.max() - X2_raw.min())
+y = (y_raw - y_raw.min()) / (y_raw.max() - y_raw.min())
+
+X1 = tf.constant(X1)
+X2 = tf.constant(X2)
+y = tf.constant(y)
+
+a = tf.Variable(initial_value=0.)
+b = tf.Variable(initial_value=0.)
+c = tf.Variable(initial_value=0.)
+variables = [a, b, c]
+
+num_epoch = 10
+optimizer = tf.keras.optimizers.SGD(learning_rate=5e-4)
+# Define Optimizer and Learning rate
+
+summary_writer = tf.summary.create_file_writer('./tensorboard')
+
+for e in range(num_epoch):
+    # Use tf.GradientTape() to record the gradient
+    with tf.GradientTape() as tape:
+        y_pred = a * X1 + b * X2 + c
+        loss = tf.reduce_sum(tf.square(y_pred - y))
+    # Calculate for the loss function
+
+    for batch_index in range(num_epoch):
+        # ...Data Traning
+        with summary_writer.as_default():  # Recorder for Tensorboard
+            tf.summary.scalar("loss", loss, step=batch_index)
+            tf.summary.histogram("weight", a, step=batch_index)
+            tf.summary.histogram("bias", b, step=batch_index)
+
+    grads = tape.gradient(loss, variables)
+    # Gradient Updating
+    optimizer.apply_gradients(grads_and_vars=zip(grads, variables))
+
+print(a, b, c)
